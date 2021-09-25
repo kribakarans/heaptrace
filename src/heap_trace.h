@@ -12,11 +12,11 @@ do {                                    \
 	sys_free_hook    = __free_hook;     \
 } while(0);
 
-#define RESTORE_LOCAL_HOOKS()         \
+#define RESTORE_LOCAL_HOOKS()           \
 do {                                    \
-	__malloc_hook  = ht_malloc_hook;     \
-	__realloc_hook = ht_realloc_hook;    \
-	__free_hook    = ht_free_hook;       \
+	__malloc_hook  = ht_malloc_hook;    \
+	__realloc_hook = ht_realloc_hook;   \
+	__free_hook    = ht_free_hook;      \
 } while(0);
 
 #define RESTORE_SYSTEM_HOOKS(void)      \
