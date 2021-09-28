@@ -2,39 +2,48 @@
 #ifndef __HEAPTRACE_H__
 #define __HEAPTRACE_H__
 
-#include <stdio.h>
-#include <malloc.h>
+#include    <math.h>
+#include   <errno.h>
+#include   <stdio.h>
+#include  <stdlib.h>
+#include  <stdint.h>
+#include  <string.h>
+#include  <malloc.h>
+#include <stdbool.h>
 
-#define SAVE_SYSTEM_HOOKS()             \
-do {                                    \
-	sys_malloc_hook  = __malloc_hook;   \
-	sys_realloc_hook = __realloc_hook;  \
-	sys_free_hook    = __free_hook;     \
+#define NATIVE_BT
+
+enum ht_limits {
+	BT_SIZE        = 50,
+	HTLINE_MAX     = 128,
+	HEAPTABLE_SIZE = 128,
+};
+
+extern bool enable_hook;
+
+#define htprintf(fmt, args...) (fprintf(stderr, fmt, ##args))
+#define HTLOG(fmt, args...)    (fprintf(stderr, "%17s:%-4d %17s: " fmt "\n", __FILE__, __LINE__, __func__, ##args))
+
+#define HT_CALL(fx)                    \
+do {                                   \
+	enable_hook = false;               \
+	/* printf("%s.%s\n", __func__, #fx); */ \
+	(fx);                              \
+	enable_hook = true;                \
 } while(0);
 
-#define RESTORE_LOCAL_HOOKS()           \
-do {                                    \
-	__malloc_hook  = ht_malloc_hook;    \
-	__realloc_hook = ht_realloc_hook;   \
-	__free_hook    = ht_free_hook;      \
-} while(0);
+extern void  __libc_free(void *ptr);
+extern void *__libc_malloc(size_t size);
+extern void *__libc_realloc(void *ptr, size_t size);
+extern void *__libc_calloc(size_t nmemb, size_t size);
 
-#define RESTORE_SYSTEM_HOOKS(void)      \
-do {                                    \
-	__malloc_hook  = sys_malloc_hook;   \
-	__realloc_hook = sys_realloc_hook;  \
-	__free_hook    = sys_free_hook;     \
-} while(0);
+extern void  free(void *ptr);
+extern void *malloc(size_t size);
+extern void *realloc(void *ptr, size_t size);
+extern void *calloc(size_t nmemb, size_t size);
 
-/* Variables to save original hooks */
-void  (*sys_free_hook)(void *ptr, const void *caller);
-void *(*sys_malloc_hook)(size_t size, const void *caller);
-void *(*sys_realloc_hook)(void *ptr, size_t size, const void *caller);
-
-/* Prototypes for our hooks */
-void  init_heap_trace(void);
-void  ht_free_hook(void *ptr, const void *caller);
-void *ht_malloc_hook(size_t size, const void *caller);
-void *ht_realloc_hook(void *ptr, size_t size, const void *caller);
+extern void init_heap_trace(void);
+extern void finish_heap_trace(void);
+extern void ht_callback(const char *name, void *(*fptr)());
 
 #endif

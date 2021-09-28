@@ -6,10 +6,10 @@ TARGET  =  libktrace.so
 
 # Compiler flags
 CC      =  gcc
-WFLAGS  = -Wall -Wno-deprecated-declarations #-Wextra
+WFLAGS  = -Wall #-Wextra
 INCLUDE = -I./include
 CFLAGS  = -fPIC -g3 $(WFLAGS) $(INCLUDE)
-LDFLAGS = -shared
+LDFLAGS = -shared -rdynamic
 
 SRCDIR  = ./src
 OBJDIR  = ./obj
@@ -26,8 +26,7 @@ INSTALL_BIN  = /usr/bin/install -D -m 744
 INSTALL_FILE = /usr/bin/install -D -m 644
 
 # Collect all .c source code
-SRCS  = $(SRCDIR)/heap_trace.c
-#SRCS = $(wildcard src/*.c) # Automatically fetch .c code
+SRCS  = $(SRCDIR)/heap_trace.c $(SRCDIR)/hook.c $(SRCDIR)/heap_table.c $(SRCDIR)/htmalloc.c $(SRCDIR)/prime.c
 
 # Build object filename to store in OBJDIR
 OBJS  = $(SRCS:%.c=$(OBJDIR)/%.o)
@@ -35,7 +34,7 @@ OBJS  = $(SRCS:%.c=$(OBJDIR)/%.o)
 # Create .d files containing dependencies
 DEPS  = $(OBJS:%.o=%.d)
 
-all: info tags $(TARGET) #test
+all: info clean tags $(TARGET) test
 
 info:
 	@printf "\nBuild dependencies:"
@@ -81,11 +80,11 @@ uninstall:
 	@$(RM) $(SYSINCLUDE)/heap_trace.h
 
 tags:
-	@mkdir  -p $(CTAGDIR)
-	@rm     -f $(CTAGDIR)/cscope.files $(CTAGDIR)/cscope.out $(CTAGDIR)/tags
-	@find    $(PWD) -type f -name "*.[Scsh]" -print | sort > $(CTAGDIR)/cscope.files
-	@cscope -b -i $(CTAGDIR)/cscope.files -f $(CTAGDIR)/cscope.out
-	@ctags  -f $(CTAGDIR)/tags -w -L - < $(CTAGDIR)/cscope.files
+	mkdir  -p $(CTAGDIR)
+	rm     -f $(CTAGDIR)/cscope.files $(CTAGDIR)/cscope.out $(CTAGDIR)/tags
+	find    $(PWD) -type f -name "*.[Scsh]" -print | sort > $(CTAGDIR)/cscope.files
+	cscope -b -i $(CTAGDIR)/cscope.files -f $(CTAGDIR)/cscope.out
+	ctags  -f $(CTAGDIR)/tags -w -L - < $(CTAGDIR)/cscope.files
 
 clean:
 	$(RM) $(TARGET) $(OBJS) $(DEPS) core -r $(CTAGDIR)
