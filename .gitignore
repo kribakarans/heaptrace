@@ -1,0 +1,7 @@
+*.so
+*.swp
+*.out
+*.d
+*.o
+core
+.ktags
