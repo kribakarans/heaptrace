@@ -2,7 +2,7 @@
 # GNU Makefile
 
 # Final binary name
-TARGET  =  libheaptrace.so
+TARGET  =  libktrace.so
 
 # Compiler flags
 CC      =  gcc
@@ -71,11 +71,13 @@ install: all
 	@$(INSTALL_DIR)  $(SYSINCLUDE)
 	$(INSTALL_BIN)   $(TARGET) $(SYSLIBPATH)
 	@$(INSTALL_FILE) $(SRCDIR)/heaptrace.h $(SYSINCLUDE)
+	@$(LINK) $(SYSINCLUDE)/heaptrace.h $(SYSINCLUDE)/ktrace.h
 	@echo "Done."
 
 uninstall:
 	@printf  "Removing library $(TARGET) ...\n"
 	$(RM) $(SYSLIBPATH)/$(TARGET)
+	@$(RM) $(SYSINCLUDE)/ktrace.h
 	@$(RM) $(SYSINCLUDE)/heaptrace.h
 
 tags:
