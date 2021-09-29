@@ -2,9 +2,9 @@
 ## Heap-Trace:
 **Simple custom implementation of Heap Memory tracer**
 
-Heaptrace detects memory leak by hooking memory functions (e.g. malloc).<br>
+Heaptrace detects memory leak by hooking dynamic memory functions (e.g. malloc).<br>
 Simply attach the shared library ```-lheaptrace``` to the target program while compiling.<br>
-At exist of target program, it prints the full backtrace of detected memory leak pointers.<br>
+At exit of target program, it prints the full backtrace of detected memory leak pointers.<br>
 
 ## Build Heap Trace from here
 ```
