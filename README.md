@@ -11,6 +11,12 @@ At exist of target program, it prints the full backtrace of detected memory leak
 
 # Changelog
 
+**Sep 29 2021 07:10**
+- Renamed as shared-library to libheaptrace
+- Renamed .so file to libheaptrace
+- Removed test module
+- Updated variable and file names
+
 **Sep 28 2021 22:50**
 - Implemented Heap Trace to track memory leaks
 - Hash table to track heap memory usages

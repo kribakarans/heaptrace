@@ -17,16 +17,16 @@ typedef struct htval {
 } htval_t;
 
 /* key:value pair (node) of the hash table */
-typedef struct ht_item {
+typedef struct ht_node {
 	uintptr_t key;
 	htval_t value;
-} ht_item;
+} ht_node_t;
 
 typedef struct {
 	int size_index;
 	int size;
 	int count;
-	ht_item **items;
+	ht_node_t **nodes;
 } ht_hash_table;
 
 extern ht_hash_table *heap_table;
@@ -36,7 +36,7 @@ extern void print_ht_report(ht_hash_table* ht);
 extern void print_heap_table(ht_hash_table *ht);
 extern void ht_del_hash_table(ht_hash_table *ht);
 extern void ht_delete(ht_hash_table *ht, const uintptr_t key);
-extern ht_item *ht_search(ht_hash_table *ht, const uintptr_t key);
+extern ht_node_t *ht_search(ht_hash_table *ht, const uintptr_t key);
 extern void ht_insert(ht_hash_table *ht, const uintptr_t key, const htval_t value);
 
 #endif

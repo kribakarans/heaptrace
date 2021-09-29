@@ -2,7 +2,7 @@
 # GNU Makefile
 
 # Final binary name
-TARGET  =  libktrace.so
+TARGET  =  libheaptrace.so
 
 # Compiler flags
 CC      =  gcc
@@ -26,7 +26,8 @@ INSTALL_BIN  = /usr/bin/install -D -m 744
 INSTALL_FILE = /usr/bin/install -D -m 644
 
 # Collect all .c source code
-SRCS  = $(SRCDIR)/heap_trace.c $(SRCDIR)/hook.c $(SRCDIR)/heap_table.c $(SRCDIR)/htmalloc.c $(SRCDIR)/prime.c
+SRCS  = $(SRCDIR)/heaptrace.c $(SRCDIR)/heaptable.c $(SRCDIR)/htmalloc.c \
+        $(SRCDIR)/hthooks.c   $(SRCDIR)/prime.c
 
 # Build object filename to store in OBJDIR
 OBJS  = $(SRCS:%.c=$(OBJDIR)/%.o)
@@ -34,7 +35,7 @@ OBJS  = $(SRCS:%.c=$(OBJDIR)/%.o)
 # Create .d files containing dependencies
 DEPS  = $(OBJS:%.o=%.d)
 
-all: info clean tags $(TARGET) test
+all: info tags $(TARGET)
 
 info:
 	@printf "\nBuild dependencies:"
@@ -69,27 +70,24 @@ install: all
 	@$(INSTALL_DIR)  $(SYSLIBPATH)
 	@$(INSTALL_DIR)  $(SYSINCLUDE)
 	$(INSTALL_BIN)   $(TARGET) $(SYSLIBPATH)
-	@$(INSTALL_FILE) $(SRCDIR)/heap_trace.h $(SYSINCLUDE)
-	@$(LINK) $(SYSINCLUDE)/heap_trace.h $(SYSINCLUDE)/ktrace.h
+	@$(INSTALL_FILE) $(SRCDIR)/heaptrace.h $(SYSINCLUDE)
 	@echo "Done."
 
 uninstall:
 	@printf  "Removing library $(TARGET) ...\n"
 	$(RM) $(SYSLIBPATH)/$(TARGET)
-	@$(RM) $(SYSINCLUDE)/ktrace.h
-	@$(RM) $(SYSINCLUDE)/heap_trace.h
+	@$(RM) $(SYSINCLUDE)/heaptrace.h
 
 tags:
-	mkdir  -p $(CTAGDIR)
-	rm     -f $(CTAGDIR)/cscope.files $(CTAGDIR)/cscope.out $(CTAGDIR)/tags
-	find    $(PWD) -type f -name "*.[Scsh]" -print | sort > $(CTAGDIR)/cscope.files
-	cscope -b -i $(CTAGDIR)/cscope.files -f $(CTAGDIR)/cscope.out
-	ctags  -f $(CTAGDIR)/tags -w -L - < $(CTAGDIR)/cscope.files
+	@mkdir  -p $(CTAGDIR)
+	@rm     -f $(CTAGDIR)/cscope.files $(CTAGDIR)/cscope.out $(CTAGDIR)/tags
+	@find    $(PWD) -type f -name "*.[Scsh]" -print | sort > $(CTAGDIR)/cscope.files
+	@cscope -b -i $(CTAGDIR)/cscope.files -f $(CTAGDIR)/cscope.out
+	@ctags  -f $(CTAGDIR)/tags -w -L - < $(CTAGDIR)/cscope.files
 
 clean:
 	$(RM) $(TARGET) $(OBJS) $(DEPS) core -r $(CTAGDIR)
 	$(MAKE) -C test clean
-
 
 .PHONY: all clean test
 

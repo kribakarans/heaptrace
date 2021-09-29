@@ -43,7 +43,7 @@ extern void *realloc(void *ptr, size_t size);
 extern void *calloc(size_t nmemb, size_t size);
 
 extern void init_heap_trace(void);
-extern void finish_heap_trace(void);
+extern void print_heap_summary(void);
 extern void ht_callback(const char *name, void *(*fptr)());
 
 #endif

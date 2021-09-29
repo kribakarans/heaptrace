@@ -7,6 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <heap_trace.h>
+#include <heaptrace.h>
 
 #endif

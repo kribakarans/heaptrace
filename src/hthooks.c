@@ -1,7 +1,7 @@
 
-#include "heap_trace.h"
+#include "heaptrace.h"
 #include "htmalloc.h"
-#include "heap_table.h"
+#include "heaptable.h"
 
 bool    enable_hook = false;
 static bool dbghook = false;

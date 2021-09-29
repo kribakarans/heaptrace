@@ -1,17 +1,16 @@
 
 #include <execinfo.h>
 
-#include "heap_table.h"
-#include "heap_trace.h"
+#include "heaptable.h"
+#include "heaptrace.h"
 #include "htmalloc.h"
 
 static bool dbgtrace = false;
 #define DEBUG(x) ((dbgtrace == true) ? (x) : (0))
 
 htbt_t *ht_backtrace(void);
-void print_htval(char *msg, htval_t *value);
+void print_ht_keyvalue(char *msg, htval_t *value);
 void print_htbacktrace(uint_least64_t key, htbt_t *bt);
-
 
 /*
  * HT_CALLBACK:
@@ -28,7 +27,7 @@ void ht_callback(const char *name, void *(*fptr)())
 	return;
 }
 
-void print_htval(char *msg, htval_t *value)
+void print_ht_keyvalue(char *msg, htval_t *value)
 {
 	if (value == NULL) {
 		HTLOG("key-value is NULL !!!");
@@ -46,7 +45,7 @@ void print_htval(char *msg, htval_t *value)
 	return;
 }
 
-void print_htitem(char *msg, ht_item *i)
+void print_htitem(char *msg, ht_node_t *i)
 {
 	if (i == NULL) {
 		HTLOG("key-value is NULL !!!");
@@ -60,55 +59,6 @@ void print_htitem(char *msg, ht_item *i)
 	);
 
 	print_htbacktrace(i->key, i->value.bt);
-
-	return;
-}
-void test_heap_table(void)
-{
-	htval_t value = {0};
-
-	ht_hash_table* ht = create_heap_table();
-
-	value.fptr = 0xF1; value.hptr = 0xD1;
-	value.bt = ht_backtrace();
-	ht_insert(ht, 0xA1, value);
-
-	#if 1
-	value.fptr = 0xF2; value.hptr = 0xD2; 
-	value.bt = ht_backtrace();
-	ht_insert(ht, 0xA2, value);
-
-	value.fptr = 0xF3; value.hptr = 0xD3;
-	value.bt = ht_backtrace();
-	ht_insert(ht, 0xA3, value);
-
-	value.fptr = 0xF4; value.hptr = 0xD4;
-	value.bt = ht_backtrace();
-	ht_insert(ht, 0xA4, value);
-
-	value.fptr = 0xF5;value.hptr = 0xD5;
-	value.bt = ht_backtrace();
-	ht_insert(ht, 0xA5, value);
-
-	value.fptr = 0xF6; value.hptr = 0xD6;
-	value.bt = ht_backtrace();
-	ht_insert(ht, 0xA6, value);
-
-	print_htitem("ht_search:", ht_search(ht, 0xA1));
-	print_htitem("ht_search:", ht_search(ht, 0xA2));
-	print_htitem("ht_search:", ht_search(ht, 0xA9));
-
-	print_heap_table(ht);
-
-	ht_delete(ht, 0xA3);
-	ht_delete(ht, 0xA5);
-	ht_delete(ht, 0xA1);
-	ht_delete(ht, 0xA4);
-	#endif
-
-	print_heap_table(ht);
-
-	ht_del_hash_table(ht);
 
 	return;
 }
@@ -195,12 +145,10 @@ void init_heap_trace(void)
 
 	DEBUG(HTLOG("Heap-Table: %p", heap_table));
 
-	//test_heap_table();
-
 	return;
 }
 
-void finish_heap_trace(void)
+void print_heap_summary(void)
 {
 	print_ht_report(heap_table);
 	ht_del_hash_table(heap_table);

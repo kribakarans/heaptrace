@@ -1,7 +1,7 @@
 
 #include "prime.h"
-#include "heap_trace.h"
-#include "heap_table.h"
+#include "heaptrace.h"
+#include "heaptable.h"
 #include "htmalloc.h"
 
 extern void print_htbacktrace(uintptr_t key, htbt_t *bt);
@@ -12,7 +12,7 @@ static bool dbght = false;
 ht_hash_table *heap_table;         /* Global heap table used by the client program */
 static const int HT_PRIME_1 = 151; /* HT_PRIMEs Used for hashing algorithm         */
 static const int HT_PRIME_2 = 163;
-static ht_item HT_DELETED_ITEM = { 0xFUL, { NULL, 0xFUL, 0xFUL }}; /* Used to mark the deleted node */
+static ht_node_t HT_DELETED_NODE = { 0xFUL, { NULL, 0xFUL, 0xFUL }}; /* Used to mark the deleted node */
 
 /*
  * Initialises a new empty hash table using a particular size index
@@ -26,7 +26,7 @@ static ht_hash_table* ht_new_sized(const int size_index)
 	ht->size = next_prime(base_size);
 
 	ht->count = 0;
-	ht->items = htcalloc((size_t)ht->size, sizeof(ht_item*));
+	ht->nodes = htcalloc((size_t)ht->size, sizeof(ht_node_t*));
 	return ht;
 }
 
@@ -41,9 +41,9 @@ ht_hash_table* create_heap_table(void)
 
 
 /*
- * Deletes an ht_item
+ * Deletes an ht_node
  */
-static void ht_del_item(ht_item* i)
+static void ht_delete_node(ht_node_t* i)
 {
 	enable_hook = false;
 
@@ -65,15 +65,15 @@ static void ht_del_item(ht_item* i)
  */
 void ht_del_hash_table(ht_hash_table* ht)
 {
-	// Iterate through items and delete any that are found
+	// Iterate through nodes and delete any that are found
 	for (int i = 0; i < ht->size; i++) {
-		ht_item* item = ht->items[i];
-		if (item != NULL && item != &HT_DELETED_ITEM) {
-			ht_del_item(item);
+		ht_node_t* node = ht->nodes[i];
+		if (node != NULL && node != &HT_DELETED_NODE) {
+			ht_delete_node(node);
 		}
 	}
 
-	htfree(ht->items);
+	htfree(ht->nodes);
 	htfree(ht);
 
 	return;
@@ -92,13 +92,13 @@ static void ht_resize(ht_hash_table* ht, const int direction)
 	}
 
 	HTLOG("RESIZING HASH TABLE ...");
-	// Create a temporary new hash table to insert items into
+	// Create a temporary new hash table to insert nodes into
 	ht_hash_table* new_ht = ht_new_sized(new_size_index);
-	// Iterate through existing hash table, add all items to new
+	// Iterate through existing hash table, add all nodes to new
 	for (int i = 0; i < ht->size; i++) {
-		ht_item* item = ht->items[i];
-		if (item != NULL && item != &HT_DELETED_ITEM) {
-			ht_insert(new_ht, item->key, item->value);
+		ht_node_t* node = ht->nodes[i];
+		if (node != NULL && node != &HT_DELETED_NODE) {
+			ht_insert(new_ht, node->key, node->value);
 		}
 	}
 
@@ -106,14 +106,14 @@ static void ht_resize(ht_hash_table* ht, const int direction)
 	ht->size_index = new_ht->size_index;
 	ht->count = new_ht->count;
 
-	// To delete new_ht, we give it ht's size and items 
+	// To delete new_ht, we give it ht's size and nodes 
 	const int tmp_size = ht->size;
 	ht->size = new_ht->size;
 	new_ht->size = tmp_size;
 
-	ht_item** tmp_items = ht->items;
-	ht->items = new_ht->items;
-	new_ht->items = tmp_items;
+	ht_node_t** tmp_nodes = ht->nodes;
+	ht->nodes = new_ht->nodes;
+	new_ht->nodes = tmp_nodes;
 
 	ht_del_hash_table(new_ht);
 
@@ -122,11 +122,11 @@ static void ht_resize(ht_hash_table* ht, const int direction)
 
 
 /*
- * Create new key-value item (node)
+ * Create new key-value node (node)
  */
-static ht_item* ht_new_item(const uintptr_t key, const htval_t value)
+static ht_node_t* ht_new_node(const uintptr_t key, const htval_t value)
 {
-	ht_item* i = htmalloc(sizeof(ht_item));
+	ht_node_t* i = htmalloc(sizeof(ht_node_t));
 	i->key     = key;
 	i->value   = value;
 	//print_htval("New node:", &(i->value));
@@ -171,28 +171,28 @@ static int ht_hash(const uintptr_t key, const int num_buckets, const int attempt
 /*
  * Returns the value associated with 'key', or -1 if the key doesn't exist
  */
-ht_item *ht_search(ht_hash_table* ht, const uintptr_t key)
+ht_node_t *ht_search(ht_hash_table* ht, const uintptr_t key)
 {
 	int index = ht_hash(key, ht->size, 0);
-	ht_item *item = ht->items[index];
+	ht_node_t *node = ht->nodes[index];
 	int i = 1;
-	while (item != NULL && item != &HT_DELETED_ITEM) {
-		if (item->key == key) {
-			return item;
+	while (node != NULL && node != &HT_DELETED_NODE) {
+		if (node->key == key) {
+			return node;
 		}
 		index = ht_hash(key, ht->size, i);
-		item = ht->items[index];
+		node = ht->nodes[index];
 		i++;
 	}
 
-	HTLOG("item not found !!! key=%lx", key);
+	HTLOG("node not found !!! key=%lx", key);
 
 	return NULL;
 }
 
 
 /*
- * Deletes key's item from the hash table. Does nothing if 'key' doesn't exist
+ * Deletes key's node from the hash table. Does nothing if 'key' doesn't exist
  */
 void ht_delete(ht_hash_table* ht, const uintptr_t key)
 {
@@ -203,15 +203,15 @@ void ht_delete(ht_hash_table* ht, const uintptr_t key)
 	}
 
 	int index = ht_hash(key, ht->size, 0);
-	ht_item* item = ht->items[index];
+	ht_node_t* node = ht->nodes[index];
 	int i = 1;
-	while (item != NULL && item != &HT_DELETED_ITEM) {
-		if (item->key == key) {
-			ht_del_item(item);
-			ht->items[index] = &HT_DELETED_ITEM;
+	while (node != NULL && node != &HT_DELETED_NODE) {
+		if (node->key == key) {
+			ht_delete_node(node);
+			ht->nodes[index] = &HT_DELETED_NODE;
 		}
 		index = ht_hash(key, ht->size, i);
-		item = ht->items[index];
+		node = ht->nodes[index];
 		i++;
 	}
 	ht->count--;
@@ -234,28 +234,28 @@ void ht_insert(ht_hash_table* ht, const uintptr_t key, const htval_t value)
 		ht_resize(ht, 1);
 	}
 
-	ht_item* item = ht_new_item(key, value);
+	ht_node_t* node = ht_new_node(key, value);
 
 	// Cycle though filled buckets until we hit an empty or deleted one
-	int index = ht_hash(item->key, ht->size, 0);
+	int index = ht_hash(node->key, ht->size, 0);
 	//HTLOG("hashed index: %d", index);
 
-	ht_item* cur_item = ht->items[index];
+	ht_node_t* cur_node = ht->nodes[index];
 	int i = 1;
-	while (cur_item != NULL && cur_item != &HT_DELETED_ITEM) {
-		if (cur_item->key == key) {
-			ht_del_item(cur_item);
-			ht->items[index] = item;
+	while (cur_node != NULL && cur_node != &HT_DELETED_NODE) {
+		if (cur_node->key == key) {
+			ht_delete_node(cur_node);
+			ht->nodes[index] = node;
 			//HTLOG("loop return: index: %d", index);
 			return;
 		}
-		index = ht_hash(item->key, ht->size, i);
-		cur_item = ht->items[index];
+		index = ht_hash(node->key, ht->size, i);
+		cur_node = ht->nodes[index];
 		i++;
 	}
 
 	// index points to a free bucket
-	ht->items[index] = item;
+	ht->nodes[index] = node;
 	ht->count++;
 	DEBUG(HTLOG("inserted: index: %3d key: 0x%lx", index, key));
 
@@ -266,14 +266,14 @@ void ht_insert(ht_hash_table* ht, const uintptr_t key, const htval_t value)
 void print_heap_table(ht_hash_table* ht)
 {
 	htprintf("\n--heap-table--\n");
-	for (int i = 0; i < ht->size; i++) { /* iterate each items in table */
-		ht_item* item = ht->items[i];
-		if (item == NULL) {
+	for (int i = 0; i < ht->size; i++) { /* iterate each nodes in table */
+		ht_node_t* node = ht->nodes[i];
+		if (node == NULL) {
 			htprintf("%.4d: --\n", i);
-		} else if (item == &HT_DELETED_ITEM) {
+		} else if (node == &HT_DELETED_NODE) {
 			htprintf("%.4d: -- <deleted>\n", i);
 		} else {
-			htprintf("%.4d: -- %lx::%lx\n", i, item->key, item->value.hptr);
+			htprintf("%.4d: -- %lx::%lx\n", i, node->key, node->value.hptr);
 		}
 	}
 
@@ -291,10 +291,10 @@ void print_ht_report(ht_hash_table* ht)
 	//print_heap_table(ht);
 	htprintf("\nHEAP TRACE SUMMARY:\n");
 	for (i = 0; i < ht->size; i++) {
-		ht_item* item = ht->items[i];
-		if ((item != NULL) && (item != &HT_DELETED_ITEM)) {
+		ht_node_t* node = ht->nodes[i];
+		if ((node != NULL) && (node != &HT_DELETED_NODE)) {
 			c++;
-			print_htbacktrace(item->key, item->value.bt);
+			print_htbacktrace(node->key, node->value.bt);
 		}
 	}
 
