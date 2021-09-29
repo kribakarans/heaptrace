@@ -17,15 +17,14 @@ $ make
 - Build package from source mentioned above
 - Do ```make install``` to install heap-trace program locally to the current user
 - Installation will create ```.lib``` and ```.include``` in ```$HOME``` path
-- Library path will be saved to ```$HOME/.lib/libheaptrace.so```
-- Header files will be saved to ```$HOME/.include/heaptrace.h```
+- Shared library location ```$HOME/.lib/libheaptrace.so```
+- Header files location ```$HOME/.include/heaptrace.h```
 - Installation to ```root``` user is not implemented for now
-- Run ```make uninstall``` to un-install ```heap-trace```
+- Run ```make uninstall``` to un-install ```heap-trace``` library
 
 ## Usage
 **1. Add INCLUDE and LDFLAGS while building target program**
-- Add ```-I /home/<user>/.include -Wl,-rpath=/home/<user>/.lib -L /home/<user>/.lib``` option in GCC command line
-    (or)
+- Add ```-I /home/<user>/.include -Wl,-rpath=/home/<user>/.lib -L /home/<user>/.lib``` option in GCC command line (or)<br>
 - Add below snippet in Makefile of target program
 ```
 INCLUDE += -I$(HOME)/.include
@@ -33,22 +32,16 @@ LDFLAGS += -Wl,-rpath=$(HOME)/.lib -L$(HOME)/.lib -lheaptrace -lm
 ``` 
 
 **2. Attach heap-trace to target program**
-- Add below code snippet in ```main()``` to register ```heap-trace``` to target program
+- Add below code snippet in ```main()``` (recommended) to register ```heap-trace``` to target program
 ```
-#include <heaptrace.h>
-...
-int main() {
-	...
     init_heap_trace();
     atexit(&print_heap_summary);
-	...
-}
 ```
 
 **3. Below shows the code snippet and compilation steps to use heap-trace**
-```
-main.c:
+**main.c**
 
+```
 #include <heaptrace.h>
 
 int main()
@@ -58,7 +51,7 @@ int main()
 
 	int *ptr = malloc(10);
 	
-	return 0; /* returning without freeing the heap memory */
+	return 0; /* returning program without freeing the heap memory */
 }
 ```
 **GCC:**
