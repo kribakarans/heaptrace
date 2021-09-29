@@ -6,14 +6,13 @@ Heaptrace detects memory leak by hooking memory functions (e.g. malloc).<br>
 Simply attach the shared library ```-lheaptrace``` to the target program while compiling.<br>
 At exist of target program, it prints the full backtrace of detected memory leak pointers.<br>
 
-## Build Heap trace from here
+## Build Heap Trace from here
 ```
 $ git clone https://github.com/kribakarans/heaptrace.git
 $ cd heaptrace/
 $ make
 ```
-
-## Install heaptrace from source
+## Install Heap Trace from source
 - Build package from source mentioned above
 - Do ```make install``` to install heap-trace program locally to the current user
 - Installation will create ```.lib``` and ```.include``` in ```$HOME``` path
@@ -21,7 +20,6 @@ $ make
 - Header files location ```$HOME/.include/heaptrace.h```
 - Installation to ```root``` user is not implemented for now
 - Run ```make uninstall``` to un-install ```heap-trace``` library
-
 ## Usage
 **1. Add INCLUDE and LDFLAGS while building target program**
 - Add ```-I /home/<user>/.include -Wl,-rpath=/home/<user>/.lib -L /home/<user>/.lib``` option in GCC command line (or)<br>
@@ -38,9 +36,8 @@ LDFLAGS += -Wl,-rpath=$(HOME)/.lib -L$(HOME)/.lib -lheaptrace -lm
     atexit(&print_heap_summary);
 ```
 
-**3. Below shows the code snippet and compilation steps to use heap-trace**
+**3. Below shows the code snippet and compilation steps to use heap-trace**<br>
 **main.c**
-
 ```
 #include <heaptrace.h>
 
@@ -59,7 +56,6 @@ int main()
 ```
 $ cc -g3 main.c -I $HOME/.include -Wl,-rpath=$HOME/.lib -L $HOME/.lib  -lheaptrace -lm
 ```
-
 **Output:**
 ```
 $ ./a.out 
