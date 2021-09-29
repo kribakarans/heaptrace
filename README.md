@@ -50,26 +50,27 @@ int main()
 	atexit(&print_heap_summary);
 
 	int *ptr = malloc(10);
-	
+	printf("%s ptr=%p\n", __func__, ptr);
+
 	return 0; /* returning program without freeing the heap memory */
 }
 ```
 **GCC:**
 ```
-$ cc -g3 main.c -I $HOME/.include/ -Wl,-rpath=$HOME/.lib -L $HOME/.lib/  -lheaptrace -lm
+$ cc -g3 main.c -I $HOME/.include -Wl,-rpath=$HOME/.lib -L $HOME/.lib  -lheaptrace -lm
 ```
 
 **Output:**
 ```
 $ ./a.out 
+main ptr=0x564d68ba56e0
 
 HEAP TRACE SUMMARY:
-Backtrace of heap-pointer : 0x55efb2e6b6e0
- |_ /home/shanmugk/.lib/libheaptrace.so(malloc+0x39) [0x7f2cb6c53cef]
- |_ ./a.out(+0x11b3) [0x55efb12aa1b3]
- |_ /lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0xf3) [0x7f2cb69170b3]
- |_ ./a.out(+0x10ce) [0x55efb12aa0ce]
-
+Backtrace of heap-pointer : 0x564d68ba56e0
+ |_ /home/shanmugk/.lib/libheaptrace.so(malloc+0x39) [0x7fa82e784cef]
+ |_ ./a.out(+0x11d3) [0x564d66df51d3]
+ |_ /lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0xf3) [0x7fa82e4480b3]
+ |_ ./a.out(+0x10ee) [0x564d66df50ee]
 
 Heap trace: Memory leak at 1 blocks !!!
 ```
