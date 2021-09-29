@@ -35,7 +35,6 @@ LDFLAGS += -Wl,-rpath=$(HOME)/.lib -L$(HOME)/.lib -lheaptrace -lm
     init_heap_trace();
     atexit(&print_heap_summary);
 ```
-
 **3. Below shows the code snippet and compilation steps to use heap-trace**<br>
 **main.c**
 ```
