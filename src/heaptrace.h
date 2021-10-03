@@ -11,13 +11,20 @@
 #include  <malloc.h>
 #include <stdbool.h>
 
-#define NATIVE_BT
-
 enum ht_limits {
-	BT_SIZE        = 50,
+	BT_SIZE        = 128,
 	HTLINE_MAX     = 128,
+	BTNAME_LEN     = 128,
 	HEAPTABLE_SIZE = 128,
 };
+
+typedef struct sym {
+	char exe[BTNAME_LEN];
+	char api[BTNAME_LEN];
+	char ptr[BTNAME_LEN];
+	char indx[BTNAME_LEN];
+	char file[BTNAME_LEN];
+} htsym_t;
 
 extern bool enable_hook;
 

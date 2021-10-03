@@ -1,4 +1,7 @@
 
+#define _GNU_SOURCE
+#include <stdio.h>
+
 #include <execinfo.h>
 
 #include "heaptable.h"
@@ -25,6 +28,66 @@ void ht_callback(const char *name, void *(*fptr)())
 	fptr(); /* callback */
 
 	return;
+}
+
+htsym_t *parse_htsymbols(const char *bt)
+{
+	int i = 0;
+	char    *ptr = NULL;
+	htsym_t *sym = NULL;
+
+	DEBUG(HTLOG("%s", bt));
+
+	do {
+		if (bt == NULL) {
+			fprintf(stderr, "%s BT is NULL\n", __func__);
+			break;
+		}
+
+		sym = (htsym_t *)calloc(1, sizeof *sym);
+		if (sym == NULL) {
+			perror("parse_btinfo: malloc failed");
+			abort();
+		}
+
+		ptr = (char *)bt;
+
+		for (i = 0; ptr[i] != '\0'; i++) {
+			if (ptr[i] == '(') {
+				strncpy(sym->exe, ptr, i);
+				sym->exe[i++] = '\0';
+				ptr = &ptr[i];
+
+				for (i = 0; ptr[i] != '\0'; i++) {
+					if (ptr[i] == '+') {
+						strncpy(sym->api, ptr, i);
+						sym->api[i++] = '\0';
+						ptr = &ptr[i];
+
+						for (i = 0; ptr[i] != '\0'; i++) {
+							if (ptr[i] == ')') {
+								strncpy(sym->indx, ptr, i);
+								sym->indx[i++] = '\0';
+								ptr = &ptr[i + 2];
+
+								for (i = 0; ptr[i] != '\0'; i++) {
+									if (ptr[i] == ']') {
+										strncpy(sym->ptr, ptr, i);
+										sym->ptr[i] = '\0';
+										goto finish;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	} while(0);
+
+finish:
+	//HTLOG("'%s' '%s' '%s' '%s' '%s'\n", sym->ptr, sym->indx, sym->api, sym->exe, sym->file);
+	return sym;
 }
 
 void print_ht_keyvalue(char *msg, htval_t *value)
@@ -63,36 +126,101 @@ void print_htitem(char *msg, ht_node_t *i)
 	return;
 }
 
+/*
+ * Update symbols @htsyms with addr2line output
+ */
+int get_addrline(htsym_t *htsyms)
+{
+	#define NSYMS 8
+
+	int len = 0,i =  0;
+	int    nbytes =  0;
+	int    retval = -1;
+	int fileindex =  2;
+	FILE      *fp = NULL;
+	char     *cmd = NULL;
+	char *saveptr = NULL;
+	char      *arr[NSYMS] = { 0 };
+	char buff[HTLINE_MAX] = { 0 };
+
+	do {
+		if (htsyms == NULL) {
+			fprintf(stderr, "%s HT symbols is NULL\n", __func__);
+			break;
+		}
+
+		asprintf(&cmd, "addr2line -s -p -f -e %s %s", htsyms->exe, htsyms->indx);
+
+		fp = popen(cmd, "r");
+		if (fp == NULL) {
+			htprintf("addr2line popen failed: %s [%s]\n", strerror(errno), cmd);
+			retval = -1;
+			break;
+		}
+
+		nbytes = fread(buff, sizeof(char), sizeof(buff)-1, fp);
+		if (nbytes < 0) {
+			htprintf("addr2line fread failed: %s [%s]\n", strerror(errno), cmd);
+			retval = -1;
+			break;
+		}
+
+		pclose(fp);
+
+		DEBUG(HTLOG("%s\n", buff));
+		arr[i] = strtok_r(buff, " ", &saveptr);
+		/* skip unresolved address (??) */
+		if (strcmp(arr[i], "??") == 0) {
+			retval = 0;
+			break;
+		}
+
+		/* if htsyms->api is empty, try to get fun-name from addr2line */
+		if ((strlen(htsyms->api) <= 0) && (strcmp(arr[i], "??") != 0)) {
+			strncpy(htsyms->api, arr[i], sizeof(htsyms->api)-1);
+		}
+
+		while (arr[i] != NULL) {
+			arr[++i] = strtok_r(NULL, " ", &saveptr);
+		}
+
+		/* get filename and line number  */
+		len = strlen(arr[fileindex]);
+		if (len != 0) {
+			if (arr[fileindex][len-1] == '\n') {
+				arr[fileindex][len-1] = '\0';
+			}
+			if (strncmp(arr[fileindex], "??", 2) != 0) {
+				snprintf(htsyms->file, (sizeof(htsyms->file)-1), "(%s)", arr[fileindex]);
+			}
+		}
+
+		retval = 0;
+	} while(0);
+
+	return retval;
+}
+
+
 void print_htbacktrace(uintptr_t key, htbt_t *bt)
 {
 	int         i = 0;
-	#ifndef NATIVE_BT
-	char     *ptr = NULL;
-	char *saveptr = NULL;
+	htsym_t *htsyms = NULL;
 	char buff[HTLINE_MAX] = {0};
-	char objx[HTLINE_MAX] = {0};
-	#endif
 
 	htprintf("Backtrace of heap-pointer : 0x%lx\n", key);
 
 	for (i = 0; i < bt->depth; i++) {
 		if (i > 1) { /* skip print_htbacktrace call traces */
-			#ifdef NATIVE_BT /* uncomment to print native backtrace   */
-			htprintf(" |_ %s\n", bt->frame[i]);
-			#else
-			strncpy(buff, bt->frame[i], sizeof(buff) - 1);
-			ptr = strtok_r(buff, "(", &saveptr);
-			strncpy(objx, ptr, sizeof(objx)-1);
-			while(ptr != NULL) {
-				if (saveptr[0] == '+') {
-					ptr = strtok_r(NULL, "+", &saveptr);
-				} else {
-					ptr = strtok_r(NULL, "+", &saveptr);
-					htprintf("%25s() -- %s\n", ptr, objx);
-				}
-				break;
+			strncpy(buff, bt->frame[i], sizeof(buff)-1);
+
+			htsyms = parse_htsymbols(buff);
+			if (htsyms != NULL) {
+				get_addrline(htsyms); /* get file name and number */
 			}
-			#endif
+
+			htprintf("  |_ %s %20s() %s %s\n", htsyms->ptr, htsyms->api, htsyms->exe, htsyms->file);
+			memset(buff, 0x00, sizeof(buff));
 		}
 	}
 
@@ -118,15 +246,15 @@ htbt_t *ht_backtrace(void)
 		exit(EXIT_FAILURE);
 	}
 
-	#if 1
+	/* skip custom backtrace functions */
 	for (int i = 0; i < bt->depth; i++) {
-		if (strstr(bt->frame[i], "_IO_printf") != NULL) { /* skip libc printf */
+		/* skip glibc printf */
+		if (strstr(bt->frame[i], "_IO_printf") != NULL) {
 			free(bt->frame);
 			bt = (htbt_t *)255;
 			break;
 		}
 	}
-	#endif
 
 	enable_hook = true;
 
@@ -135,6 +263,15 @@ htbt_t *ht_backtrace(void)
 
 void init_heap_trace(void)
 {
+	static int htinit = 0;
+
+	/* prevent multiple inits */
+	if (htinit == 1) {
+		printf("heap-trace is initiated already !!!\n");
+		return;
+	}
+
+	htinit++;
 	enable_hook = true;
 
 	heap_table = create_heap_table();
@@ -142,6 +279,8 @@ void init_heap_trace(void)
 		HTLOG("failed to create Heap Table !!!");
 		exit(1);
 	}
+
+	atexit(&print_heap_summary);
 
 	DEBUG(HTLOG("Heap-Table: %p", heap_table));
 
