@@ -42,7 +42,7 @@ LDFLAGS += -Wl,-rpath=$(HOME)/.lib -L$(HOME)/.lib -lheaptrace -lm
     init_heap_trace();
 ```
 **3. Below shows the code snippet and compilation steps to use heap-trace**<br>
-**main.c**
+**main.c:**
 ```
 #include <heaptrace.h>
 
@@ -54,18 +54,19 @@ int main()
 	printf("%s ptr=%p\n", __func__, ptr);
 
 	/*
-       returning program without freeing
-       the heap memory pointer - ptr
-     */
+	   returning program without freeing
+	   the heap memory pointer - ptr
+	 */
 	return 0;
 }
 ```
 **GCC:**
 ```
-$ cc -g3 main.c -I $HOME/.include -Wl,-rpath=$HOME/.lib -L $HOME/.lib  -lheaptrace -lm
+$ cc -g3 main.c -I $HOME/.include -Wl,-rpath=$HOME/.lib -L $HOME/.lib -lheaptrace -lm
 ```
 **Output:**
 ```
+$ ./a.out 
 main ptr=0x55d552ae96e0
 
 HEAP TRACE SUMMARY:
@@ -104,14 +105,14 @@ Heap trace: Memory leak at 1 blocks !!!
 - Print heap_trace report with backtrace at exit
 
 **Sep 25 2021 09:10**
-- Added Makefile rules to info, install, uninstall and ktags.
+- Added Makefile rules to info, install, uninstall and ktags
 
 **Sep 23 2021 08:25**
 - Implemented ```heap_trace``` as shared library ```libktrace.so```
-- Added test application to validate the library functionalities`
+- Added test application to validate the library functionalities
 
 **Sep 21 2021 01:15**
 - Implemented memory hooking mechanism
 
 **Sep 20 2021 07:50**
-- Initiated prototype init_heap_trace();
+- Initiated prototype ```init_heap_trace();```
