@@ -1,11 +1,18 @@
 
 ## Heap-Trace:
-**Simple and custom implementation to find Heap Memory leaks**
+**Simple custom implementation of Heap Memory tracer**
 
 Heaptrace detects memory leak by hooking dynamic memory functions (e.g. malloc).<br>
 Simply attach the shared library ```-lheaptrace``` to the target program while compiling.<br>
-At exit of target program, it prints the full backtrace of detected memory leak pointers.<br>
+At exit, the target program prints the backtrace of leaked heap-memory pointers.<br>
 
+Heaptrace intercepts the following library calls:
+```
+void *malloc(size_t size);
+void *calloc(size_t nmemb, size_t size);
+void *realloc(void *ptr, size_t size);
+void  free(void *ptr);
+```
 ## Build Heap Trace from here
 ```
 $ git clone https://github.com/kribakarans/heaptrace.git
@@ -33,7 +40,6 @@ LDFLAGS += -Wl,-rpath=$(HOME)/.lib -L$(HOME)/.lib -lheaptrace -lm
 - Add below code snippet in ```main()``` (recommended) to register ```heap-trace``` to target program
 ```
     init_heap_trace();
-    atexit(&print_heap_summary);
 ```
 **3. Below shows the code snippet and compilation steps to use heap-trace**<br>
 **main.c**
@@ -43,12 +49,15 @@ LDFLAGS += -Wl,-rpath=$(HOME)/.lib -L$(HOME)/.lib -lheaptrace -lm
 int main()
 {
 	init_heap_trace();
-	atexit(&print_heap_summary);
 
 	int *ptr = malloc(10);
 	printf("%s ptr=%p\n", __func__, ptr);
 
-	return 0; /* returning program without freeing ptr */
+	/*
+	   returning program without freeing
+	   the heap memory pointer - ptr
+	 */
+	return 0;
 }
 ```
 **GCC:**
@@ -61,19 +70,28 @@ $ ./a.out
 main ptr=0x564d68ba56e0
 
 HEAP TRACE SUMMARY:
-Backtrace of heap-pointer : 0x564d68ba56e0
- |_ /home/shanmugk/.lib/libheaptrace.so(malloc+0x39) [0x7fa82e784cef]
- |_ ./a.out(+0x11d3) [0x564d66df51d3]
- |_ /lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0xf3) [0x7fa82e4480b3]
- |_ ./a.out(+0x10ee) [0x564d66df50ee]
+Backtrace of heap-pointer : 0x55d552ae96e0
+  |_ 0x7f579616c808               malloc() /home/shanmugk/.lib/libktrace.so 
+  |_ 0x55d551aaa1a4                 main() ./a.out (main.c:8)
+  |_ 0x7f5795e2f0b3    __libc_start_main() /lib/x86_64-linux-gnu/libc.so.6 
+  |_ 0x55d551aaa0ce               _start() ./a.out 
 
 Heap trace: Memory leak at 1 blocks !!!
 ```
 
 ## Changelog
 
+**Oct 03 2021 13:50**
+- Print filename and line number in backtrace
+- Added ```addr2line``` utility to find file and line number
+
+**Sep 29 2021 09:20**
+- Added build and usage guide in readme file
+- Reverted shared-library name to libktrace for internal use
+- Enable heap-trace test code
+
 **Sep 29 2021 07:10**
-- Renamed as shared-library to libheaptrace
+- Renamed as shared-library to libheaptrace to Github users
 - Renamed .so file to libheaptrace
 - Removed test module
 - Updated variable and file names
