@@ -164,7 +164,7 @@ void print_heap_summary(void)
 
 	/* prevent multiple calls */
 	if (called == 1) {
-		printf("heap-trace summary already printed !!!\n");
+		printf("heap-trace: summary already printed !!!\n");
 		return;
 	}
 
