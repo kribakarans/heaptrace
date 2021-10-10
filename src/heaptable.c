@@ -28,7 +28,6 @@ static ht_hash_table* ht_new_sized(const int size_index)
 	return ht;
 }
 
-
 /*
  * Initialises a new empty hash table
  */
@@ -36,7 +35,6 @@ ht_hash_table* create_heap_table(void)
 {
 	return ht_new_sized(0);
 }
-
 
 /*
  * Deletes an ht_node
@@ -58,7 +56,6 @@ static void ht_delete_node(ht_node_t* i)
 	return;
 }
 
-
 /*
  * Deletes the hash table
  */
@@ -77,7 +74,6 @@ void ht_del_hash_table(ht_hash_table* ht)
 
 	return;
 }
-
 
 /*
  * Resize the hash table
@@ -119,7 +115,6 @@ static void ht_resize(ht_hash_table* ht, const int direction)
 	return;
 }
 
-
 /*
  * Create new key-value node (node)
  */
@@ -131,7 +126,6 @@ static ht_node_t* ht_new_node(const uintptr_t key, const htval_t value)
 
 	return i;
 }
-
 
 /*
  * Returns the hash of 'key', an int between 0 and 'm'.
@@ -153,7 +147,6 @@ static int ht_generic_hash(const uintptr_t key, const int a, const int m)
 	return (int)hash;
 }
 
-
 static int ht_hash(const uintptr_t key, const int num_buckets, const int attempt)
 {
 	const int hash_a = ht_generic_hash(key, HT_PRIME_1, num_buckets);
@@ -164,7 +157,6 @@ static int ht_hash(const uintptr_t key, const int num_buckets, const int attempt
 
 	return hash;
 }
-
 
 /*
  * Returns the value associated with 'key', or -1 if the key doesn't exist
@@ -187,7 +179,6 @@ ht_node_t *ht_search(ht_hash_table* ht, const uintptr_t key)
 
 	return NULL;
 }
-
 
 /*
  * Deletes key's node from the hash table. Does nothing if 'key' doesn't exist
@@ -216,7 +207,6 @@ void ht_delete(ht_hash_table* ht, const uintptr_t key)
 
 	return;
 }
-
 
 /*
  * Inserts the 'key': 'value' pair into the hash table
@@ -259,7 +249,6 @@ void ht_insert(ht_hash_table* ht, const uintptr_t key, const htval_t value)
 
 	return;
 }
-
 
 void print_heap_table(ht_hash_table* ht)
 {
@@ -306,6 +295,5 @@ void print_ht_report(ht_hash_table* ht)
 
 	return;
 }
-
 
 //EOF

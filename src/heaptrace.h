@@ -45,9 +45,7 @@ extern void *calloc(size_t nmemb, size_t size);
 
 extern void init_heap_trace(void);
 extern void print_heap_summary(void);
+extern int  backtrace_simple_cb(void *data, uintptr_t pc);
 extern void ht_callback(const char *name, void *(*fptr)());
-
-extern int backtrace_simple_cb(void *data, uintptr_t pc);
-extern void btstate_error(void *data, const char *msg, int errnum);
 
 #endif

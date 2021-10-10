@@ -2,7 +2,7 @@
 #ifndef __HEAPTABLE_H__
 #define __HEAPTABLE_H__
 
-#define MAX_FRAMES 32
+#define MAX_FRAMES 64
 
 #include  <stdint.h>
 

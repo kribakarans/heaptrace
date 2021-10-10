@@ -128,7 +128,6 @@ calloc (size_t nmemb, size_t size)
 	return __libc_calloc(nmemb, size);
 }
 
-
 void*
 malloc (size_t size)
 {
