@@ -1,31 +1,19 @@
 
+#define _GNU_SOURCE
+#include <dlfcn.h>
 #include <execinfo.h>
+#include <assert.h>
 
 #include "heaptable.h"
 #include "heaptrace.h"
 #include "htmalloc.h"
 
-static bool dbgtrace = false;
+struct backtrace_state *htstate;
+static bool   dbgtrace = false;
 #define DEBUG(x) ((dbgtrace == true) ? (x) : (0))
 
-htbt_t *ht_backtrace(void);
 void print_ht_keyvalue(char *msg, htval_t *value);
-void print_htbacktrace(uint_least64_t key, htbt_t *bt);
-
-/*
- * HT_CALLBACK:
- * 1. disable heap_trace hooks
- * 2. call function @fptr
- * 3. enable hooks after the funtion returns
- */
-void ht_callback(const char *name, void *(*fptr)())
-{
-	htprintf("%s calling ... %s()\n", __func__, name);
-
-	fptr(); /* callback */
-
-	return;
-}
+void print_htbacktrace(uint_least64_t key, htval_t *value);
 
 void print_ht_keyvalue(char *msg, htval_t *value)
 {
@@ -35,12 +23,12 @@ void print_ht_keyvalue(char *msg, htval_t *value)
 	}
 
 	htprintf("\n%s\n"
-	         "  Fun.ptr  : %lx\n"
-	         "  Heap.ptr : %lx\n",
-	         msg, value->fptr, value->hptr
+	         "  Heap.ptr : %lx\n"
+	         "  Nframes : %d\n",
+	         msg, value->hptr, value->nframes
 	);
 
-	print_htbacktrace(0xFUL, value->bt);
+	print_htbacktrace(0xFUL, value);
 
 	return;
 }
@@ -53,84 +41,22 @@ void print_htitem(char *msg, ht_node_t *i)
 	}
 
 	htprintf("\n%s key: %lx\n"
-	         "  Fun.ptr  : %lx\n"
-	         "  Heap.ptr : %lx\n",
-	         msg, i->key, i->value.fptr, i->value.hptr
+	         "  Heap.ptr : %lx\n"
+	         "  Nframes  : %d\n",
+	         msg, i->key, i->value.hptr, i->value.nframes
 	);
 
-	print_htbacktrace(i->key, i->value.bt);
+	print_htbacktrace(i->key, &(i->value));
 
 	return;
 }
 
-void print_htbacktrace(uintptr_t key, htbt_t *bt)
+static void backrace_state_error(void *data, const char *msg, int errnum)
 {
-	int         i = 0;
-	#ifndef NATIVE_BT
-	char     *ptr = NULL;
-	char *saveptr = NULL;
-	char buff[HTLINE_MAX] = {0};
-	char objx[HTLINE_MAX] = {0};
-	#endif
-
-	htprintf("Backtrace of heap-pointer : 0x%lx\n", key);
-
-	for (i = 0; (bt != NULL) && (i < bt->depth); i++) {
-		if (i > 1) { /* skip print_htbacktrace call traces */
-			#ifdef NATIVE_BT /* uncomment to print native backtrace   */
-			htprintf(" |_ %s\n", bt->frame[i]);
-			#else
-			strncpy(buff, bt->frame[i], sizeof(buff) - 1);
-			ptr = strtok_r(buff, "(", &saveptr);
-			strncpy(objx, ptr, sizeof(objx)-1);
-			while(ptr != NULL) {
-				if (saveptr[0] == '+') {
-					ptr = strtok_r(NULL, "+", &saveptr);
-				} else {
-					ptr = strtok_r(NULL, "+", &saveptr);
-					htprintf("%25s() -- %s\n", ptr, objx);
-				}
-				break;
-			}
-			#endif
-		}
-	}
-
-	puts("");
+	char *caller = (char *)data;
+	htprintf("heap_trace: backtrace_create_state() failed at %s() !!! [%s/%s]\n", caller, msg, strerror(errno));
 
 	return;
-}
-
-htbt_t *ht_backtrace(void)
-{
-	htbt_t *bt = NULL;
-	void *buffer[BT_SIZE] = {0};
-
-	enable_hook = false;
-
-	bt = malloc(sizeof(*bt));
-
-	/* fetch backtrace of the caller */
-	bt->depth = backtrace(buffer, BT_SIZE);
-	bt->frame = backtrace_symbols(buffer, bt->depth);
-	if (bt->frame == NULL) {
-		perror("backtrace_symbols failed");
-		exit(EXIT_FAILURE);
-	}
-
-	#if 1
-	for (int i = 0; i < bt->depth; i++) {
-		if (strstr(bt->frame[i], "_IO_printf") != NULL) { /* skip libc printf */
-			free(bt->frame);
-			bt = (htbt_t *)255;
-			break;
-		}
-	}
-	#endif
-
-	enable_hook = true;
-
-	return bt;
 }
 
 void init_heap_trace(void)
@@ -155,6 +81,8 @@ void init_heap_trace(void)
 	atexit(&print_heap_summary);
 	DEBUG(HTLOG("Heap-Table: %p", heap_table));
 
+	htstate = backtrace_create_state(NULL, 0, backrace_state_error, NULL);
+
 	return;
 }
 
@@ -176,5 +104,80 @@ void print_heap_summary(void)
 	return;
 }
 
+static void backtrace_error(void *data, const char *msg, int errnum)
+{
+	fprintf(stderr, "Backtrace failed !!! [%s/%s]\n", msg, strerror(errno));
+
+	return;
+}
+
+static int backtrace_full_cb_1 (void *data, uintptr_t pc, const char *file, int lineno, const char *function)
+{
+	if (file != NULL || function != NULL) {
+		htprintf("  |__  0x%-13lx: %25s (in %s:%d)\n", pc, function, file, lineno);
+	}
+
+	return 0;
+}
+
+/*
+  Print verbose backtrace with help of dladdr library
+*/
+static int backtrace_full_cb_2(void *data, uintptr_t pc, const char *file, int lineno, const char *function)
+{
+	int       rc = -1;
+	int   retval = -1;
+	Dl_info info = {0};
+
+	do {
+		rc = dladdr((void*)pc ,&info);
+
+		if (rc != 0) {
+			htprintf("  |__  0x%-13lx: %25s (in %s:%d)\n", pc, 
+			                 ((info.dli_sname)?info.dli_sname:(function?function:"??")),
+			                 ((file)?file:info.dli_fname), lineno);
+		}
+
+		retval = 0;
+	} while(0);
+
+	return retval;
+}
+
+void print_htbacktrace(uintptr_t key, htval_t *value)
+{
+	htprintf("Backtrace of heap-pointer : 0x%lx\n", key);
+	DEBUG(htprintf("%s: key: %lx hptr: %lx nframes: %d \n", __func__, key, value->hptr, value->nframes));
+
+	if (key != value->hptr) {
+		htprintf("%s: invalid key-value pair !!! [%lx != %lx]\n", __func__, key, value->hptr);
+	}
+
+	for (int i = 0; i < value->nframes; i++) {
+		#ifdef VERBOSE_BACKTRACE
+		backtrace_pcinfo(htstate, value->pc[i], backtrace_full_cb_2, backtrace_error, NULL);
+		#else
+		backtrace_pcinfo(htstate, value->pc[i], backtrace_full_cb_1, backtrace_error, NULL);
+		#endif
+	}
+
+	htprintf("\n");
+
+	return;
+}
+
+int backtrace_simple_cb(void *data, uintptr_t pc)
+{
+	htval_t *value = (htval_t *)data;
+
+	assert(data != NULL);
+
+	value->pc[value->nframes] = pc;
+	DEBUG(HTLOG("saving frame[%d]: value: %p hptr %lx pc: %lx",
+	             value->nframes, value, value->hptr, value->pc[value->nframes]));
+	value->nframes = (value->nframes + 1);
+
+	return 0;
+}
 
 //EOF

@@ -9,7 +9,7 @@ CC      =  gcc
 WFLAGS  = -Wall #-Wextra
 INCLUDE = -I./include
 CFLAGS  = -fPIC -g3 $(WFLAGS) $(INCLUDE)
-LDFLAGS = -shared -rdynamic
+LDFLAGS = -shared -ldl
 
 SRCDIR  = ./src
 OBJDIR  = ./obj
