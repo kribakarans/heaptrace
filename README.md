@@ -1,7 +1,5 @@
 
-## Heap-Trace:
-**Inline Heap Memory tracer**
-
+## Heap-Trace: Inline Heap Memory tracer
 Heaptrace detects memory leak by hooking dynamic memory functions (e.g. malloc).<br>
 Simply attach the shared library ```-lheaptrace``` to the target program while compiling.<br>
 At exit, the target program itself prints the backtrace of leaked heap-memory pointers.<br>
