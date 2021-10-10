@@ -248,8 +248,9 @@ htbt_t *ht_backtrace(void)
 
 	/* skip custom backtrace functions */
 	for (int i = 0; i < bt->depth; i++) {
-		/* skip glibc printf */
-		if (strstr(bt->frame[i], "_IO_printf") != NULL) {
+		/* dont track below calls */
+		if ((strstr(bt->frame[i], "_IO_printf") != NULL) ||
+		    (strstr(bt->frame[i], "_IO_puts")   != NULL)) {
 			free(bt->frame);
 			bt = (htbt_t *)255;
 			break;
