@@ -21,7 +21,7 @@ hook_free (void *ptr, void *caller)
 {
 	enable_hook = false;
 	free(ptr);
-	DEBUG(HTLOG("caller: %p ptr: %p", caller, ptr));
+	DEBUG(HTLOG("ptr: %p", ptr));
 	enable_hook = true;
 
 	ht_delete(heap_table, (uintptr_t)ptr);

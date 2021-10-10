@@ -75,7 +75,7 @@ void print_htbacktrace(uintptr_t key, htbt_t *bt)
 
 	htprintf("Backtrace of heap-pointer : 0x%lx\n", key);
 
-	for (i = 0; i < bt->depth; i++) {
+	for (i = 0; (bt != NULL) && (i < bt->depth); i++) {
 		if (i > 1) { /* skip print_htbacktrace call traces */
 			#ifdef NATIVE_BT /* uncomment to print native backtrace   */
 			htprintf(" |_ %s\n", bt->frame[i]);
@@ -135,6 +135,15 @@ htbt_t *ht_backtrace(void)
 
 void init_heap_trace(void)
 {
+	static int htinit = 0;
+
+	/* prevent multiple inits */
+	if (htinit == 1) {
+		printf("heap-trace is initiated already !!!\n");
+		return;
+	}
+
+	htinit++;
 	enable_hook = true;
 
 	heap_table = create_heap_table();
@@ -143,6 +152,7 @@ void init_heap_trace(void)
 		exit(1);
 	}
 
+	atexit(&print_heap_summary);
 	DEBUG(HTLOG("Heap-Table: %p", heap_table));
 
 	return;
@@ -150,6 +160,16 @@ void init_heap_trace(void)
 
 void print_heap_summary(void)
 {
+	static int called = 0;
+
+	/* prevent multiple calls */
+	if (called == 1) {
+		printf("heap-trace summary already printed !!!\n");
+		return;
+	}
+
+	called++;
+
 	print_ht_report(heap_table);
 	ht_del_hash_table(heap_table);
 
