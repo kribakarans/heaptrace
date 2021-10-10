@@ -4,8 +4,15 @@
 
 Heaptrace detects memory leak by hooking dynamic memory functions (e.g. malloc).<br>
 Simply attach the shared library ```-lheaptrace``` to the target program while compiling.<br>
-At exit of target program, it prints the full backtrace of detected memory leak pointers.<br>
+At exit, the target program prints the backtrace of leaked heap-memory pointers.<br>
 
+Heaptrace intercepts the following library calls:
+```
+void *malloc(size_t size);
+void *calloc(size_t nmemb, size_t size);
+void *realloc(void *ptr, size_t size);
+void  free(void *ptr);
+```
 ## Build Heap Trace from here
 ```
 $ git clone https://github.com/kribakarans/heaptrace.git
@@ -33,27 +40,29 @@ LDFLAGS += -Wl,-rpath=$(HOME)/.lib -L$(HOME)/.lib -lheaptrace -lm
 - Add below code snippet in ```main()``` (recommended) to register ```heap-trace``` to target program
 ```
     init_heap_trace();
-    atexit(&print_heap_summary);
 ```
 **3. Below shows the code snippet and compilation steps to use heap-trace**<br>
-**main.c**
+**main.c:**
 ```
 #include <heaptrace.h>
 
 int main()
 {
 	init_heap_trace();
-	atexit(&print_heap_summary);
 
 	int *ptr = malloc(10);
 	printf("%s ptr=%p\n", __func__, ptr);
 
-	return 0; /* returning program without freeing the heap memory */
+	/*
+	   returning program without freeing
+	   the heap memory pointer - ptr
+	 */
+	return 0;
 }
 ```
 **GCC:**
 ```
-$ cc -g3 main.c -I $HOME/.include -Wl,-rpath=$HOME/.lib -L $HOME/.lib  -lheaptrace -lm
+$ cc -g3 main.c -I $HOME/.include -Wl,-rpath=$HOME/.lib -L $HOME/.lib -lheaptrace -lm
 ```
 **Output:**
 ```
@@ -92,14 +101,14 @@ Heap trace: Memory leak at 1 blocks !!!
 - Print heap_trace report with backtrace at exit
 
 **Sep 25 2021 09:10**
-- Added Makefile rules to info, install, uninstall and ktags.
+- Added Makefile rules to info, install, uninstall and ktags
 
 **Sep 23 2021 08:25**
 - Implemented ```heap_trace``` as shared library ```libktrace.so```
-- Added test application to validate the library functionalities`
+- Added test application to validate the library functionalities
 
 **Sep 21 2021 01:15**
 - Implemented memory hooking mechanism
 
 **Sep 20 2021 07:50**
-- Initiated prototype init_heap_trace();
+- Initiated prototype ```init_heap_trace();```

@@ -4,7 +4,6 @@
 int main()
 {
 	init_heap_trace();
-	atexit(&print_heap_summary);
 
 	#if 1
 	void *p1 = malloc(10);
