@@ -80,8 +80,9 @@ Heap trace: Memory leak at 1 blocks !!!
 ## Changelog
 **Oct 11 2021 03:10**
 - Implemented ```libbacktrace``` to print filename and line number
+- Removed ```addr2line``` method and replaced with ```libbacktrace``` library
 - Faster than ```gnubacktrace + addr2line``` that uses ```popen()``` calls
-- Fixed crash by calling multiple ```atexit()``` handler
+- Fixed crash by calling multiple ```atexit()``` handlers
 
 **Oct 03 2021 13:50**
 - Print filename and line number in backtrace
@@ -104,7 +105,7 @@ Heap trace: Memory leak at 1 blocks !!!
 - Insert node into hash table on allocs
 - Delete node from hash table on frees
 - Removed gnu malloc hooks and externing glibc alloc apis for hooking 
-- Print heap_trace report with backtrace at exit
+- Print ```heap_trace``` report with backtrace at exit
 
 **Sep 25 2021 09:10**
 - Added Makefile rules to info, install, uninstall and ktags
