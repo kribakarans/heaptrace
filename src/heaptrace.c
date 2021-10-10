@@ -247,7 +247,7 @@ htbt_t *ht_backtrace(void)
 	}
 
 	/* skip custom backtrace functions */
-	for (int i = 0; i < bt->depth; i++) {
+	for (int i = 0; (bt != NULL) && (i < bt->depth); i++) {
 		/* dont track below calls */
 		if ((strstr(bt->frame[i], "_IO_printf") != NULL) ||
 		    (strstr(bt->frame[i], "_IO_puts")   != NULL)) {
@@ -290,6 +290,16 @@ void init_heap_trace(void)
 
 void print_heap_summary(void)
 {
+	static int called = 0;
+
+	/* prevent multiple calls */
+	if (called == 1) {
+		printf("heap-trace: summary already printed !!!\n");
+		return;
+	}
+
+	called++;
+
 	print_ht_report(heap_table);
 	ht_del_hash_table(heap_table);
 

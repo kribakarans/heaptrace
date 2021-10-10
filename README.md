@@ -80,6 +80,8 @@ Heap trace: Memory leak at 1 blocks !!!
 ```
 
 ## Changelog
+**Oct 10 2021 16:40**
+- Fixed crash by calling multiple ```atexit()``` handler
 
 **Oct 03 2021 12:30**
 - Print filename and line number in backtrace

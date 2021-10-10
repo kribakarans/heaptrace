@@ -35,7 +35,7 @@ OBJS  = $(SRCS:%.c=$(OBJDIR)/%.o)
 # Create .d files containing dependencies
 DEPS  = $(OBJS:%.o=%.d)
 
-all: info tags $(TARGET)
+all: info tags $(TARGET) test
 
 info:
 	@printf "\nBuild dependencies:"
