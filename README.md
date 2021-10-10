@@ -4,7 +4,7 @@
 
 Heaptrace detects memory leak by hooking dynamic memory functions (e.g. malloc).<br>
 Simply attach the shared library ```-lheaptrace``` to the target program while compiling.<br>
-At exit, the target program prints the backtrace of leaked heap-memory pointers.<br>
+At exit, the target program itself prints the backtrace of leaked heap-memory pointers.<br>
 
 Heaptrace intercepts the following library calls:
 ```
@@ -33,7 +33,7 @@ $ make
 - Add below snippet in Makefile of target program
 ```
 INCLUDE += -I$(HOME)/.include
-LDFLAGS += -Wl,-rpath=$(HOME)/.lib -L$(HOME)/.lib -lheaptrace -lm
+LDFLAGS += -Wl,-rpath=$(HOME)/.lib -L$(HOME)/.lib -lheaptrace -lm -ldl -lbacktrace
 ``` 
 
 **2. Attach heap-trace to target program**
@@ -42,7 +42,7 @@ LDFLAGS += -Wl,-rpath=$(HOME)/.lib -L$(HOME)/.lib -lheaptrace -lm
     init_heap_trace();
 ```
 **3. Below shows the code snippet and compilation steps to use heap-trace**<br>
-**main.c**
+**main.c:**
 ```
 #include <heaptrace.h>
 
@@ -62,24 +62,28 @@ int main()
 ```
 **GCC:**
 ```
-$ cc -g3 main.c -I $HOME/.include -Wl,-rpath=$HOME/.lib -L $HOME/.lib -lheaptrace -lm
+$ cc -g3 main.c -I $HOME/.include -Wl,-rpath=$HOME/.lib -L $HOME/.lib -lheaptrace -lm -ldl -lbacktrace
 ```
 **Output:**
 ```
 $ ./a.out 
-main ptr=0x564d68ba56e0
+main ptr=0x55ac31fb86e0
 
 HEAP TRACE SUMMARY:
-Backtrace of heap-pointer : 0x55d552ae96e0
-  |_ 0x7f579616c808               malloc() /home/shanmugk/.lib/libktrace.so 
-  |_ 0x55d551aaa1a4                 main() ./a.out (main.c:8)
-  |_ 0x7f5795e2f0b3    __libc_start_main() /lib/x86_64-linux-gnu/libc.so.6 
-  |_ 0x55d551aaa0ce               _start() ./a.out 
+Backtrace of heap-pointer : 0x55ac31fb86e0
+  |__  0x7f4fb1c451cf :                    malloc (in ./hthooks.c:137)
+  |__  0x55ac31505483 :                      main (in ./main.c:7)
+  |__  0x7f4fb18e40b2 :         __libc_start_main (in /lib/x86_64-linux-gnu/libc.so.6:0)
+  |__  0x55ac315053ad :                        ?? (in ./a.out:0)
 
 Heap trace: Memory leak at 1 blocks !!!
 ```
 
 ## Changelog
+**Oct 11 2021 03:10**
+- Implemented ```libbacktrace``` to print filename and line number
+- Faster than ```gnubacktrace + addr2line``` that uses ```popen()``` calls
+- Fixed crash by calling multiple ```atexit()``` handler
 
 **Oct 03 2021 13:50**
 - Print filename and line number in backtrace

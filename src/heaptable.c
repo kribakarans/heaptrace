@@ -4,15 +4,13 @@
 #include "heaptable.h"
 #include "htmalloc.h"
 
-extern void print_htbacktrace(uintptr_t key, htbt_t *bt);
-
 static bool dbght = false;
 #define DEBUG(x) ((dbght == true) ? (x) : (0))
 
 ht_hash_table *heap_table;         /* Global heap table used by the client program */
 static const int HT_PRIME_1 = 151; /* HT_PRIMEs Used for hashing algorithm         */
 static const int HT_PRIME_2 = 163;
-static ht_node_t HT_DELETED_NODE = { 0xFUL, { NULL, 0xFUL, 0xFUL }}; /* Used to mark the deleted node */
+static ht_node_t HT_DELETED_NODE = { 0xFUL, { 0xFUL, 0xFF }}; /* Used to mark the deleted node */
 
 /*
  * Initialises a new empty hash table using a particular size index
@@ -48,11 +46,12 @@ static void ht_delete_node(ht_node_t* i)
 	enable_hook = false;
 
 	DEBUG(HTLOG("deleted: 0x%lx", i->key));
-	//print_htval("Delete node:", &(i->value));
 
-	free(i->value.bt->frame);
-	free(i->value.bt);
+	i->value.hptr = 0xFF;
+	i->value.nframes = 0;
+	memset(i->value.pc, 0x00, sizeof(uintptr_t));
 	free(i);
+	i = NULL;
 
 	enable_hook = true;
 
@@ -129,7 +128,6 @@ static ht_node_t* ht_new_node(const uintptr_t key, const htval_t value)
 	ht_node_t* i = htmalloc(sizeof(ht_node_t));
 	i->key     = key;
 	i->value   = value;
-	//print_htval("New node:", &(i->value));
 
 	return i;
 }
@@ -294,7 +292,7 @@ void print_ht_report(ht_hash_table* ht)
 		ht_node_t* node = ht->nodes[i];
 		if ((node != NULL) && (node != &HT_DELETED_NODE)) {
 			c++;
-			print_htbacktrace(node->key, node->value.bt);
+			print_htbacktrace(node->key, &(node->value));
 		}
 	}
 

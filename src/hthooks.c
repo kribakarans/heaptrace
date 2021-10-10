@@ -7,8 +7,6 @@ bool    enable_hook = false;
 static bool dbghook = false;
 #define DEBUG(x) ((dbghook == true) ? (x) : (0))
 
-extern htbt_t *ht_backtrace(void);
-
 /*
   All Hook functions does the same operation mentioned below:
   1. enable_hook = false; -- deactivate hooks before calling libc apis
@@ -21,7 +19,7 @@ hook_free (void *ptr, void *caller)
 {
 	enable_hook = false;
 	free(ptr);
-	DEBUG(HTLOG("caller: %p ptr: %p", caller, ptr));
+	DEBUG(HTLOG("ptr: %p", ptr));
 	enable_hook = true;
 
 	ht_delete(heap_table, (uintptr_t)ptr);
@@ -37,12 +35,15 @@ hook_calloc (size_t nmemb, size_t size, void *caller)
 
 	enable_hook = false;
 	result = calloc(nmemb, size);
-	DEBUG(HTLOG("caller: %p retval: %p", caller, result));
+	DEBUG(HTLOG("retval: %p", result));
 	enable_hook = true;
 
-	value.fptr = (uintptr_t)caller;
+	value.nframes = 0;
 	value.hptr = (uintptr_t)result;
-	value.bt = ht_backtrace();
+	if (backtrace_simple(htstate, 1, backtrace_simple_cb, NULL, &value) < 0) {
+		HTLOG("backtrace_simple failed !!!");
+	}
+
 	ht_insert(heap_table, (uintptr_t)result, value);
 
 	return result;
@@ -56,12 +57,15 @@ hook_realloc (void *ptr, size_t size, void *caller)
 
 	enable_hook = false;
 	result = realloc(ptr, size);
-	DEBUG(HTLOG("caller: %p retval: %p", caller, result));
+	DEBUG(HTLOG("retval: %p", result));
 	enable_hook = true;
 
-	value.fptr = (uintptr_t)caller;
+	value.nframes = 0;
 	value.hptr = (uintptr_t)result;
-	value.bt = ht_backtrace();
+	if (backtrace_simple(htstate, 1, backtrace_simple_cb, NULL, &value) < 0) {
+		HTLOG("backtrace_simple failed !!!");
+	}
+
 	ht_insert(heap_table, (uintptr_t)result, value);
 
 	return result;
@@ -75,16 +79,16 @@ hook_malloc (size_t size, void *caller)
 
 	enable_hook = false;
 	result = malloc(size);
-	DEBUG(HTLOG("caller: %p retval: %p", caller, result));
+	DEBUG(HTLOG("retval: %p", result));
 	enable_hook = true;
 
-	value.fptr = (uintptr_t)caller;
+	value.nframes = 0;
 	value.hptr = (uintptr_t)result;
-	value.bt = ht_backtrace();
-
-	if (value.bt != (htbt_t *)255) {
-		ht_insert(heap_table, (uintptr_t)result, value);
+	if (backtrace_simple(htstate, 1, backtrace_simple_cb, NULL, &value) < 0) {
+		HTLOG("backtrace_simple failed !!!");
 	}
+
+	ht_insert(heap_table, (uintptr_t)result, value);
 
 	return result;
 }

@@ -5,7 +5,7 @@ int main()
 {
 	init_heap_trace();
 
-	#if 0
+	#if 1
 	void *p1 = malloc(10);
 	char *p5 = NULL;
 	asprintf(&p5, "I am from asprintf...\n");

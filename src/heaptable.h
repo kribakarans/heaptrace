@@ -2,18 +2,15 @@
 #ifndef __HEAPTABLE_H__
 #define __HEAPTABLE_H__
 
-#include  <stdint.h>
+#define MAX_FRAMES 32
 
-typedef struct htbt {
-	int    depth; /* backtrace depth  */
-	char **frame; /* caller backtrace */
-} htbt_t;
+#include  <stdint.h>
 
 /* caller details who allocated heap memory */
 typedef struct htval {
-	htbt_t     *bt;
-	uintptr_t fptr;  /* caller function address */
-	uintptr_t hptr;  /* points to heap location */
+	uintptr_t hptr;   /* leaked heap pointer address   */
+	int nframes;      /* number of back-tracked frames */
+	uintptr_t pc[MAX_FRAMES]; /* program counter values  */
 } htval_t;
 
 /* key:value pair (node) of the hash table */
@@ -38,6 +35,7 @@ extern void ht_del_hash_table(ht_hash_table *ht);
 extern void ht_delete(ht_hash_table *ht, const uintptr_t key);
 extern ht_node_t *ht_search(ht_hash_table *ht, const uintptr_t key);
 extern void ht_insert(ht_hash_table *ht, const uintptr_t key, const htval_t value);
+extern void print_htbacktrace(uintptr_t key, htval_t *value);
 
 #endif
 

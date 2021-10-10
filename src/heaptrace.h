@@ -2,6 +2,7 @@
 #ifndef __HEAPTRACE_H__
 #define __HEAPTRACE_H__
 
+#include <backtrace.h>
 #include    <math.h>
 #include   <errno.h>
 #include   <stdio.h>
@@ -11,22 +12,15 @@
 #include  <malloc.h>
 #include <stdbool.h>
 
+#define VERBOSE_BACKTRACE
+
 enum ht_limits {
-	BT_SIZE        = 128,
-	HTLINE_MAX     = 128,
-	BTNAME_LEN     = 128,
 	HEAPTABLE_SIZE = 128,
+	BT_DEPTH = 32
 };
 
-typedef struct sym {
-	char exe[BTNAME_LEN];
-	char api[BTNAME_LEN];
-	char ptr[BTNAME_LEN];
-	char indx[BTNAME_LEN];
-	char file[BTNAME_LEN];
-} htsym_t;
-
 extern bool enable_hook;
+extern struct backtrace_state *htstate;
 
 #define htprintf(fmt, args...) (fprintf(stderr, fmt, ##args))
 #define HTLOG(fmt, args...)    (fprintf(stderr, "%17s:%-4d %17s: " fmt "\n", __FILE__, __LINE__, __func__, ##args))
@@ -52,5 +46,7 @@ extern void *calloc(size_t nmemb, size_t size);
 extern void init_heap_trace(void);
 extern void print_heap_summary(void);
 extern void ht_callback(const char *name, void *(*fptr)());
+
+extern int backtrace_simple_cb(void *data, uintptr_t pc);
 
 #endif
