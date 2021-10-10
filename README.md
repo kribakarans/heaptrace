@@ -1,7 +1,5 @@
 
-## Heap-Trace:
-**Simple custom implementation of Heap Memory tracer**
-
+## Heap-Trace: Inline Heap Memory tracker
 Heaptrace detects memory leak by hooking dynamic memory functions (e.g. malloc).<br>
 Simply attach the shared library ```-lheaptrace``` to the target program while compiling.<br>
 At exit, the target program prints the backtrace of leaked heap-memory pointers.<br>
@@ -104,7 +102,7 @@ Heap trace: Memory leak at 1 blocks !!!
 - Insert node into hash table on allocs
 - Delete node from hash table on frees
 - Removed gnu malloc hooks and externing glibc alloc apis for hooking 
-- Print heap_trace report with backtrace at exit
+- Print ```heap_trace``` report with backtrace at exit
 
 **Sep 25 2021 09:10**
 - Added Makefile rules to info, install, uninstall and ktags
