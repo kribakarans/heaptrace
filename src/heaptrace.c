@@ -132,6 +132,7 @@ static int backtrace_full_cb_2(void *data, uintptr_t pc, const char *file, int l
 	do {
 		rc = dladdr((void*)pc ,&info);
 
+		//printf(" ==> 0x%-13lx: %25s (in %s)\n", pc, info.dli_sname, info.dli_fname);
 		if (rc != 0) {
 			htprintf("  |__  0x%-13lx: %25s (in %s:%d)\n", pc, 
 			                 ((info.dli_sname)?info.dli_sname:(function?function:"??")),

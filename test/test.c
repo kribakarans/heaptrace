@@ -1,7 +1,7 @@
 
 #include "test.h"
 
-int main()
+int fun2()
 {
 	init_heap_trace();
 
@@ -29,3 +29,17 @@ int main()
 	return 0;
 }
 
+void fun1()
+{
+	fun2();
+}
+
+void fun()
+{
+	fun1();
+}
+
+int main()
+{
+	fun();
+}

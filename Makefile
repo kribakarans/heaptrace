@@ -18,7 +18,7 @@ TESTDIR = ./test
 # Makefile specifics
 RM           = rm -f
 LINK         = ln -sf
-CTAGDIR      = .ktags
+CTAGDIR      = __ktags
 SYSLIBPATH   = $(HOME)/.lib
 SYSINCLUDE   = $(HOME)/.include
 INSTALL_DIR  = /usr/bin/install -d

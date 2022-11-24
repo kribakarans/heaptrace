@@ -4,4 +4,4 @@
 *.d
 *.o
 core
-.ktags
+__ktags
