@@ -6,7 +6,7 @@ CC      =  gcc
 SODIR   = ../
 INCLUDE = -I ../src
 CFLAGS  = -g3 -Wall $(INCLUDE)
-LDFLAGS = -Wl,-rpath=$(SODIR) -L$(SODIR) -lktrace -lbacktrace -ldl -lm
+LDFLAGS = -Wl,-rpath=$(SODIR) -L$(SODIR) -lheaptrace -lbacktrace -ldl -lm
 
 SRCDIR  = .
 SRCS    = $(SRCDIR)/test.c
